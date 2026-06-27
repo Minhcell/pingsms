@@ -36,6 +36,13 @@
     <string name="res_failed">⚠️ KHÔNG GỬI ĐƯỢC / SỐ LỖI</string>
 
     <string name="label_history">Lịch sử dò</string>
+    <string name="btn_clear_history">Xóa lịch sử</string>
+    <string name="confirm_clear_title">Xóa lịch sử?</string>
+    <string name="confirm_clear_msg">Toàn bộ lịch sử dò sẽ bị xóa và không khôi phục được.</string>
+    <string name="confirm_clear_ok">Xóa</string>
+    <string name="confirm_clear_cancel">Hủy</string>
+    <string name="history_empty">Chưa có lịch sử để xóa</string>
+    <string name="history_cleared">Đã xóa lịch sử</string>
 
     <string name="err_phone">Vui lòng nhập số điện thoại</string>
     <string name="history_tap">Đã điền số %1$s — nhấn DÒ để dò lại</string>
