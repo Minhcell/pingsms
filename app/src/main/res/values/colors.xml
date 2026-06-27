@@ -1,0 +1,8 @@
+<resources>
+    <color name="brand">#1565C0</color>
+    <color name="green">#2E7D32</color>
+    <color name="red">#C62828</color>
+    <color name="orange">#EF6C00</color>
+    <color name="neutral">#546E7A</color>
+    <color name="ic_launcher_background">#1565C0</color>
+</resources>
