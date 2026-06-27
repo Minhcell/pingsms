@@ -30,7 +30,9 @@ class HistoryAdapter(
     override fun onBindViewHolder(h: VH, position: Int) {
         val r = items[position]
         val ctx = h.itemView.context
-        h.title.text = "${r.phone}   [mã: ${r.code}]"
+
+        val tag = if (r.code.isBlank()) r.method else "${r.method} • ${r.code}"
+        h.title.text = "${r.phone}   [$tag]"
 
         val (label, colorRes) = when (r.outcome) {
             PingManager.Outcome.ON -> "✅ MÁY MỞ" to R.color.green
@@ -41,9 +43,8 @@ class HistoryAdapter(
         h.result.setTextColor(ContextCompat.getColor(ctx, colorRes))
 
         h.detail.text = r.detail
-        h.meta.text = "${r.time}  •  ${r.elapsedMs / 1000.0}s  •  Chạm để ping lại"
+        h.meta.text = "${r.time}  •  ${r.elapsedMs / 1000.0}s  •  Chạm để dò lại"
 
-        // Chạm vào dòng lịch sử -> điền số này lên ô nhập để ping lại.
         h.itemView.setOnClickListener { onItemClick(r) }
     }
 }
