@@ -1,8 +1,8 @@
 package com.pingsim
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.telephony.SubscriptionInfo
@@ -23,19 +23,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var pingManager: PingManager
+    private val hlrManager = HlrManager()
     private lateinit var adapter: HistoryAdapter
 
     private val history = ArrayList<PingRecord>()
-    private val subIds = ArrayList<Int>()   // song song với spinner; -1 = SIM mặc định
+    private val subIds = ArrayList<Int>()   // song song spinner; -1 = SIM mặc định
     private var countDown: CountDownTimer? = null
 
     private val permLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
         if (result[Manifest.permission.READ_PHONE_STATE] == true) loadSims()
-        if (result[Manifest.permission.SEND_SMS] == true) {
-            toast(getString(R.string.perm_ok))
-        }
+        if (result[Manifest.permission.SEND_SMS] == true) toast(getString(R.string.perm_ok))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +46,6 @@ class MainActivity : AppCompatActivity() {
         pingManager = PingManager(this)
 
         adapter = HistoryAdapter(history) { rec ->
-            // Chạm vào lịch sử -> đưa số lên ô nhập để ping lại.
             binding.editPhone.setText(rec.phone)
             binding.editPhone.setSelection(rec.phone.length)
             binding.editPhone.requestFocus()
@@ -62,10 +60,13 @@ class MainActivity : AppCompatActivity() {
         }
         binding.txtTimeout.text = getString(R.string.timeout_label, binding.slider.value.toInt())
 
+        loadCreds()
         binding.btnPing.setOnClickListener { onPingClicked() }
 
         requestNeededPermissions()
     }
+
+    // ---------- Quyền & SIM ----------
 
     private fun requestNeededPermissions() {
         val need = ArrayList<String>()
@@ -105,20 +106,53 @@ class MainActivity : AppCompatActivity() {
         binding.labelSim.visibility = show
     }
 
+    // ---------- API key (lưu/đọc) ----------
+
+    private fun prefs() = getSharedPreferences("pingsms", Context.MODE_PRIVATE)
+
+    private fun loadCreds() {
+        binding.editUserId.setText(prefs().getString("user_id", ""))
+        binding.editApiKey.setText(prefs().getString("api_key", ""))
+    }
+
+    private fun saveCreds(userId: String, apiKey: String) {
+        prefs().edit().putString("user_id", userId).putString("api_key", apiKey).apply()
+    }
+
+    // ---------- Điều phối theo chế độ ----------
+
     private fun onPingClicked() {
         val phone = binding.editPhone.text?.toString()?.trim().orEmpty()
         if (phone.isEmpty()) {
             binding.editPhone.error = getString(R.string.err_phone)
             return
         }
-        if (!granted(Manifest.permission.SEND_SMS)) {
-            permLauncher.launch(
-                arrayOf(Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE)
-            )
-            toast(getString(R.string.need_perm))
-            return
-        }
 
+        when (binding.modeGroup.checkedButtonId) {
+            R.id.btnModeHlr -> runHlr(phone, fallbackToSms = false)
+            R.id.btnModeBoth -> {
+                if (!ensureSmsPermission()) return
+                runHlr(phone, fallbackToSms = true)
+            }
+            else -> {
+                if (!ensureSmsPermission()) return
+                runSms(phone)
+            }
+        }
+    }
+
+    private fun ensureSmsPermission(): Boolean {
+        if (granted(Manifest.permission.SEND_SMS)) return true
+        permLauncher.launch(
+            arrayOf(Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE)
+        )
+        toast(getString(R.string.need_perm))
+        return false
+    }
+
+    // ---------- Chế độ SMS ----------
+
+    private fun runSms(phone: String) {
         val content = binding.editContent.text?.toString()?.trim().orEmpty()
         val timeout = binding.slider.value.toInt()
         val subId = subIds.getOrElse(binding.spinnerSim.selectedItemPosition) { -1 }
@@ -145,23 +179,64 @@ class MainActivity : AppCompatActivity() {
             ) = runOnUiThread {
                 stopCountdown()
                 setBusy(false)
-
-                val (label, colorRes) = when (outcome) {
-                    PingManager.Outcome.ON -> getString(R.string.res_on) to R.color.green
-                    PingManager.Outcome.OFF -> getString(R.string.res_off) to R.color.red
-                    PingManager.Outcome.FAILED -> getString(R.string.res_failed) to R.color.orange
-                }
-                binding.txtStatus.text = "$label\n$detail"
-                binding.txtStatus.setTextColor(ContextCompat.getColor(this@MainActivity, colorRes))
-
-                history.add(
-                    0,
-                    PingRecord(phone, code, outcome, detail, now(), elapsedMs)
-                )
-                adapter.notifyItemInserted(0)
-                binding.recyclerHistory.scrollToPosition(0)
+                showOutcome(outcome, detail)
+                addHistory(phone, "SMS", code, outcome, detail, elapsedMs)
             }
         })
+    }
+
+    // ---------- Chế độ HLR (im lặng) ----------
+
+    private fun runHlr(phone: String, fallbackToSms: Boolean) {
+        val userId = binding.editUserId.text?.toString()?.trim().orEmpty()
+        val apiKey = binding.editApiKey.text?.toString()?.trim().orEmpty()
+        if (userId.isEmpty() || apiKey.isEmpty()) {
+            toast(getString(R.string.need_api))
+            binding.editUserId.requestFocus()
+            binding.scrollTop.smoothScrollTo(0, 0)
+            return
+        }
+        saveCreds(userId, apiKey)
+
+        setBusy(true)
+        binding.txtStatus.text = getString(R.string.status_hlr)
+        binding.txtStatus.setTextColor(ContextCompat.getColor(this, R.color.neutral))
+
+        hlrManager.lookup(phone, userId, apiKey, "VN", object : HlrManager.Callback {
+            override fun onResult(res: HlrManager.HlrResult) = runOnUiThread {
+                val inconclusive = res.status == "unknown" || res.status == "failed" || res.status == "error"
+                addHistory(phone, "HLR", "", res.outcome, res.detail, res.elapsedMs)
+
+                if (fallbackToSms && inconclusive && ensureSmsPermission()) {
+                    binding.txtStatus.text = getString(R.string.status_hlr_to_sms)
+                    runSms(phone)
+                } else {
+                    setBusy(false)
+                    showOutcome(res.outcome, res.detail)
+                }
+            }
+        })
+    }
+
+    // ---------- Tiện ích chung ----------
+
+    private fun showOutcome(outcome: PingManager.Outcome, detail: String) {
+        val (label, colorRes) = when (outcome) {
+            PingManager.Outcome.ON -> getString(R.string.res_on) to R.color.green
+            PingManager.Outcome.OFF -> getString(R.string.res_off) to R.color.red
+            PingManager.Outcome.FAILED -> getString(R.string.res_failed) to R.color.orange
+        }
+        binding.txtStatus.text = "$label\n$detail"
+        binding.txtStatus.setTextColor(ContextCompat.getColor(this, colorRes))
+    }
+
+    private fun addHistory(
+        phone: String, method: String, code: String,
+        outcome: PingManager.Outcome, detail: String, elapsedMs: Long
+    ) {
+        history.add(0, PingRecord(phone, method, code, outcome, detail, now(), elapsedMs))
+        adapter.notifyItemInserted(0)
+        binding.recyclerHistory.scrollToPosition(0)
     }
 
     private fun startCountdown(sec: Int) {
@@ -169,12 +244,9 @@ class MainActivity : AppCompatActivity() {
         binding.txtCountdown.visibility = View.VISIBLE
         countDown = object : CountDownTimer(sec * 1000L, 1000) {
             override fun onTick(ms: Long) {
-                binding.txtCountdown.text =
-                    getString(R.string.countdown, (ms / 1000).toInt() + 1)
+                binding.txtCountdown.text = getString(R.string.countdown, (ms / 1000).toInt() + 1)
             }
-            override fun onFinish() {
-                binding.txtCountdown.text = ""
-            }
+            override fun onFinish() { binding.txtCountdown.text = "" }
         }.start()
     }
 
@@ -191,9 +263,9 @@ class MainActivity : AppCompatActivity() {
         binding.editContent.isEnabled = !busy
         binding.slider.isEnabled = !busy
         binding.spinnerSim.isEnabled = !busy
+        binding.modeGroup.isEnabled = !busy
         binding.progress.visibility = if (busy) View.VISIBLE else View.GONE
-        binding.btnPing.text =
-            getString(if (busy) R.string.btn_pinging else R.string.btn_ping)
+        binding.btnPing.text = getString(if (busy) R.string.btn_pinging else R.string.btn_ping)
     }
 
     private fun now(): String =
