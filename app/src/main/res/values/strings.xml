@@ -26,6 +26,7 @@
     <string name="label_history">Lịch sử ping</string>
 
     <string name="err_phone">Vui lòng nhập số điện thoại</string>
+    <string name="history_tap">Đã điền số %1$s — nhấn PING để dò lại</string>
     <string name="need_perm">Cần cấp quyền gửi SMS rồi nhấn PING lại</string>
     <string name="perm_ok">Đã cấp quyền gửi SMS</string>
 </resources>
