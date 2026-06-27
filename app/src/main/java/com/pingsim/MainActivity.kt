@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.pingsim.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         loadCreds()
         binding.btnPing.setOnClickListener { onPingClicked() }
+        binding.btnClearHistory.setOnClickListener { confirmClearHistory() }
 
         requestNeededPermissions()
     }
@@ -237,6 +239,24 @@ class MainActivity : AppCompatActivity() {
         history.add(0, PingRecord(phone, method, code, outcome, detail, now(), elapsedMs))
         adapter.notifyItemInserted(0)
         binding.recyclerHistory.scrollToPosition(0)
+    }
+
+    private fun confirmClearHistory() {
+        if (history.isEmpty()) {
+            toast(getString(R.string.history_empty))
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.confirm_clear_title)
+            .setMessage(R.string.confirm_clear_msg)
+            .setNegativeButton(R.string.confirm_clear_cancel, null)
+            .setPositiveButton(R.string.confirm_clear_ok) { _, _ ->
+                val n = history.size
+                history.clear()
+                adapter.notifyItemRangeRemoved(0, n)
+                toast(getString(R.string.history_cleared))
+            }
+            .show()
     }
 
     private fun startCountdown(sec: Int) {
