@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Ping SMS</string>
+
+    <string name="hint_phone">Số điện thoại cần ping (VD: 0912345678)</string>
+    <string name="hint_content">Nội dung tin nhắn ping</string>
+    <string name="default_content">Kiem tra so</string>
+    <string name="note_code">Mã kiểm tra 5 ký tự (đổi mỗi lần gửi) sẽ tự chèn vào CUỐI tin nhắn.</string>
+
+    <string name="label_sim">Chọn SIM gửi:</string>
+    <string name="default_sim">SIM mặc định</string>
+
+    <string name="timeout_label">Thời gian chờ: %1$d giây</string>
+
+    <string name="btn_ping">PING SỐ NÀY</string>
+    <string name="btn_pinging">ĐANG PING…</string>
+
+    <string name="status_idle">Nhập số rồi nhấn PING. Nếu máy đích MỞ và có sóng, hệ thống sẽ nhận báo cáo giao trong vài giây.</string>
+    <string name="status_sending">Đang gửi tin tới tổng đài (SMSC)…</string>
+    <string name="status_waiting">Đã gửi (mã %1$s). Đang chờ báo cáo GIAO từ nhà mạng…</string>
+    <string name="countdown">Còn lại: %1$d giây</string>
+
+    <string name="res_on">✅ MÁY ĐANG MỞ</string>
+    <string name="res_off">⛔ MÁY TẮT / NGOÀI VÙNG PHỦ SÓNG</string>
+    <string name="res_failed">⚠️ KHÔNG GỬI ĐƯỢC / SỐ LỖI</string>
+
+    <string name="label_history">Lịch sử ping</string>
+
+    <string name="err_phone">Vui lòng nhập số điện thoại</string>
+    <string name="need_perm">Cần cấp quyền gửi SMS rồi nhấn PING lại</string>
+    <string name="perm_ok">Đã cấp quyền gửi SMS</string>
+</resources>
