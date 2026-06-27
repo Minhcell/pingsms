@@ -14,6 +14,7 @@
         app:titleTextColor="@android:color/white" />
 
     <ScrollView
+        android:id="@+id/scrollTop"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="false">
@@ -27,6 +28,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:endIconMode="clear_text"
                 android:hint="@string/hint_phone">
 
                 <com.google.android.material.textfield.TextInputEditText
