@@ -46,7 +46,14 @@ class MainActivity : AppCompatActivity() {
 
         pingManager = PingManager(this)
 
-        adapter = HistoryAdapter(history)
+        adapter = HistoryAdapter(history) { rec ->
+            // Chạm vào lịch sử -> đưa số lên ô nhập để ping lại.
+            binding.editPhone.setText(rec.phone)
+            binding.editPhone.setSelection(rec.phone.length)
+            binding.editPhone.requestFocus()
+            binding.scrollTop.smoothScrollTo(0, 0)
+            toast(getString(R.string.history_tap, rec.phone))
+        }
         binding.recyclerHistory.layoutManager = LinearLayoutManager(this)
         binding.recyclerHistory.adapter = adapter
 
