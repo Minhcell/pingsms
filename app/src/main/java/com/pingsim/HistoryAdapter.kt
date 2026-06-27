@@ -7,8 +7,10 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 
-class HistoryAdapter(private val items: List<PingRecord>) :
-    RecyclerView.Adapter<HistoryAdapter.VH>() {
+class HistoryAdapter(
+    private val items: List<PingRecord>,
+    private val onItemClick: (PingRecord) -> Unit
+) : RecyclerView.Adapter<HistoryAdapter.VH>() {
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
         val title: TextView = v.findViewById(R.id.itemTitle)
@@ -39,6 +41,9 @@ class HistoryAdapter(private val items: List<PingRecord>) :
         h.result.setTextColor(ContextCompat.getColor(ctx, colorRes))
 
         h.detail.text = r.detail
-        h.meta.text = "${r.time}  •  ${r.elapsedMs / 1000.0}s"
+        h.meta.text = "${r.time}  •  ${r.elapsedMs / 1000.0}s  •  Chạm để ping lại"
+
+        // Chạm vào dòng lịch sử -> điền số này lên ô nhập để ping lại.
+        h.itemView.setOnClickListener { onItemClick(r) }
     }
 }
